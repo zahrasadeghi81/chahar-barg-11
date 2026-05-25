@@ -1,0 +1,17 @@
+{
+  "name": "chahar-barg-11",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LAN multiplayer implementation of the two-player Iranian card game Chahar Barg (11).",
+  "scripts": {
+    "install:all": "npm install --prefix server && npm install --prefix client",
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "server": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client",
+    "build": "npm run build --prefix client",
+    "test": "npm test --prefix server"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
