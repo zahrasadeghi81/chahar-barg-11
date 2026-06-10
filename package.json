@@ -9,9 +9,13 @@
     "server": "npm run dev --prefix server",
     "client": "npm run dev --prefix client",
     "build": "npm run build --prefix client",
-    "test": "npm test --prefix server"
+    "test": "npm test --prefix server",
+    "postinstall": "npm install --prefix client && npm install --prefix server"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
