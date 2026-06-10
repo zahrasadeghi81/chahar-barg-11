@@ -147,6 +147,13 @@ export function playMove(room, playerIndex, cardId, tableCardIds = []) {
   }
 
   advanceAfterMove(room, playerIndex, surAwarded);
+  // در انتهای تابع playMove (قبل از return)
+    room.lastAction = {
+      playerIndex,
+      playedCard: playedCard,
+      capturedCardIds: chosenCards.map(c => c.id) // کارت‌هایی که از زمین جمع شدند
+    };
+
   return { surAwarded };
 }
 
@@ -218,6 +225,7 @@ export function publicState(room, socketId = null) {
   return {
     roomCode: room.roomCode,
     status: room.status,
+    lastAction: room.lastAction,
     players: room.players.map((player) => ({
       name: player.name,
       index: player.index,
@@ -227,6 +235,7 @@ export function publicState(room, socketId = null) {
       capturedCount: room.captured[player.index]?.length ?? 0
     })),
     you: viewerIndex ?? null,
+    message: room.message,
     totalScores: room.totalScores,
     roundScores: room.roundScores,
     surCounts: room.surCounts,

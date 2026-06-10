@@ -3,11 +3,11 @@ import express from "express";
 import http from "node:http";
 import { Server } from "socket.io";
 import {
-  addBotPlayer,
   addPlayer,
+  addBotPlayer,
   createRoom,
-  playBotMove,
   playMove,
+  playBotMove,
   publicState,
   reconnectPlayer,
   removePlayer,
@@ -45,21 +45,21 @@ io.on("connection", (socket) => {
       socket.join(roomCode);
       reply?.({ ok: true, roomCode, playerIndex: player.index });
       broadcastRoom(roomCode);
-      queueBotMove(roomCode);
     } catch (error) {
       reply?.({ ok: false, error: error.message });
     }
   });
 
-  socket.on("room:practice", ({ name }, reply) => {
+  socket.on("room:createBot", ({ name, botName }, reply) => {
     try {
       const roomCode = createRoomCode();
       const room = createRoom(roomCode);
       rooms.set(roomCode, room);
       const player = addPlayer(room, socket.id, name);
-      addBotPlayer(room);
-      startGame(room);
+      addBotPlayer(room, botName);
       socket.join(roomCode);
+      startGame(room);
+      playBotTurns(room);
       reply?.({ ok: true, roomCode, playerIndex: player.index });
       broadcastRoom(roomCode);
     } catch (error) {
@@ -95,13 +95,31 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("room:leave", ({ roomCode }, reply) => {
+    try {
+      const normalizedRoomCode = normalizeRoomCode(roomCode);
+      const room = rooms.get(normalizedRoomCode);
+      if (room) {
+        removePlayer(room, socket.id);
+        socket.leave(normalizedRoomCode);
+        broadcastRoom(normalizedRoomCode);
+        if (room.players.filter((player) => !player.bot).every((player) => !player.connected)) {
+          cleanupEmptyRoom(normalizedRoomCode);
+        }
+      }
+      reply?.({ ok: true });
+    } catch (error) {
+      reply?.({ ok: false, error: error.message });
+    }
+  });
+
   socket.on("game:start", ({ roomCode }, reply) => {
     try {
       const room = requireRoom(roomCode);
       startGame(room);
+      const botMoves = playBotTurns(room);
       reply?.({ ok: true });
-      broadcastRoom(room.roomCode);
-      queueBotMove(room.roomCode);
+      broadcastRoom(room.roomCode, botMoves.some((move) => move.surAwarded) ? "sur" : null);
     } catch (error) {
       reply?.({ ok: false, error: error.message });
     }
@@ -112,9 +130,9 @@ io.on("connection", (socket) => {
       const room = requireRoom(roomCode);
       if (room.status !== "roundComplete") throw new Error("The current round is not complete.");
       startRound(room);
+      const botMoves = playBotTurns(room);
       reply?.({ ok: true });
-      broadcastRoom(room.roomCode);
-      queueBotMove(room.roomCode);
+      broadcastRoom(room.roomCode, botMoves.some((move) => move.surAwarded) ? "sur" : null);
     } catch (error) {
       reply?.({ ok: false, error: error.message });
     }
@@ -124,9 +142,9 @@ io.on("connection", (socket) => {
     try {
       const room = requireRoom(roomCode);
       startGame(room);
+      const botMoves = playBotTurns(room);
       reply?.({ ok: true });
-      broadcastRoom(room.roomCode);
-      queueBotMove(room.roomCode);
+      broadcastRoom(room.roomCode, botMoves.some((move) => move.surAwarded) ? "sur" : null);
     } catch (error) {
       reply?.({ ok: false, error: error.message });
     }
@@ -140,7 +158,10 @@ io.on("connection", (socket) => {
       const result = playMove(room, player.index, cardId, tableCardIds);
       reply?.({ ok: true, ...result });
       broadcastRoom(room.roomCode, result.surAwarded ? "sur" : null);
-      queueBotMove(room.roomCode);
+      const botMoves = playBotTurns(room);
+      if (botMoves.length > 0) {
+        broadcastRoom(room.roomCode, botMoves.some((move) => move.surAwarded) ? "sur" : null);
+      }
     } catch (error) {
       reply?.({ ok: false, error: error.message });
     }
@@ -197,21 +218,12 @@ function cleanupEmptyRoom(roomCode) {
   }
 }
 
-function queueBotMove(roomCode) {
-  setTimeout(() => {
-    const room = rooms.get(roomCode);
-    if (!room || room.status !== "playing") return;
-
+function playBotTurns(room) {
+  const moves = [];
+  while (room.status === "playing") {
     const currentPlayer = room.players[room.turn];
-    if (!currentPlayer?.bot) return;
-
-    try {
-      const result = playBotMove(room, currentPlayer.index);
-      broadcastRoom(roomCode, result.surAwarded ? "sur" : null);
-      queueBotMove(roomCode);
-    } catch (error) {
-      room.message = error.message;
-      broadcastRoom(roomCode);
-    }
-  }, 700);
+    if (!currentPlayer?.bot) break;
+    moves.push(playBotMove(room, currentPlayer.index));
+  }
+  return moves;
 }
