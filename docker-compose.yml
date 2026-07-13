@@ -1,0 +1,21 @@
+services:
+
+  server:
+    build:
+      context: ./server
+    container_name: chahar-server-container
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+
+  client:
+    build:
+      context: ./client
+    container_name: chahar-client-container
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./server:/app
+      - /app/node_modules
