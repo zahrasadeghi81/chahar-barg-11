@@ -9,6 +9,7 @@
     "server": "npm run dev --prefix server",
     "client": "npm run dev --prefix client",
     "build": "npm run build --prefix client",
+    "start": "node server/src/index.js",
     "test": "npm test --prefix server",
     "postinstall": "npm install --prefix client && npm install --prefix server"
   },

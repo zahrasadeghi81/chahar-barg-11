@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import http from "node:http";
+import path from "node:path";
 import { Server } from "socket.io";
 import {
   addPlayer,
@@ -24,6 +25,14 @@ app.use(cors({ origin: CLIENT_ORIGIN }));
 app.get("/health", (_request, response) => {
   response.json({ ok: true, game: "Chahar Barg (11)" });
 });
+
+if (process.env.NODE_ENV === "production") {
+  const clientDist = path.join(process.cwd(), "client", "dist");
+  app.use(express.static(clientDist));
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(clientDist, "index.html"));
+  });
+}
 
 const server = http.createServer(app);
 const io = new Server(server, {

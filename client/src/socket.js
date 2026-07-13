@@ -3,9 +3,9 @@ import { io } from "socket.io-client";
 const configuredServerUrl = import.meta.env.VITE_SERVER_URL?.trim();
 const serverUrl =
   configuredServerUrl ||
-  (window.location.hostname.endsWith(".vercel.app")
-    ? window.location.origin
-    : `${window.location.protocol}//${window.location.hostname}:3001`);
+  (import.meta.env.DEV
+    ? `${window.location.protocol}//${window.location.hostname}:3001`
+    : window.location.origin);
 const ACK_TIMEOUT_MS = 6000;
 
 export const socket = io(serverUrl, {
