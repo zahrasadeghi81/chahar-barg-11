@@ -2,6 +2,7 @@
   "name": "chahar-barg-11",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "LAN multiplayer implementation of the two-player Iranian card game Chahar Barg (11).",
   "scripts": {
     "install:all": "npm install --prefix server && npm install --prefix client",
